@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    user: admin
+    database: spectre-metrics
+    basicAuth: false
+    isDefault: true
+    jsonData:
+      version: Flux
+      organization: spectre-monitoring
+      defaultBucket: spectre-metrics
+      tlsSkipVerify: true
+    secureJsonData:
+      token: your-influxdb-token
+    editable: true

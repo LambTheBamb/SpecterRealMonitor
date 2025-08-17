@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # Performance Metrics Collector
+  perf-collector:
+    build:
+      context: ./perf-collector
+      dockerfile: Dockerfile
+    container_name: spectre-perf-collector
+    privileged: true
+    pid: host
+    network_mode: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /dev:/host/dev:ro
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=your-influxdb-token
+      - INFLUXDB_ORG=spectre-monitoring
+      - INFLUXDB_BUCKET=spectre-metrics
+      - COLLECTION_INTERVAL=1
+      - DEBUG_MODE=false
+    depends_on:
+      - influxdb
+    restart: unless-stopped
+
+  # InfluxDB for time-series data storage
+  influxdb:
+    image: influxdb:2.7
+    container_name: spectre-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=spectrepassword
+      - DOCKER_INFLUXDB_INIT_ORG=spectre-monitoring
+      - DOCKER_INFLUXDB_INIT_BUCKET=spectre-metrics
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=your-influxdb-token
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: spectre-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=spectrepassword
+      - GF_INSTALL_PLUGINS=grafana-influxdb-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - influxdb
+    restart: unless-stopped
+
+  # Alert Manager for anomaly detection
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: spectre-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager:/etc/alertmanager
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    restart: unless-stopped
+
+  # Prometheus for additional monitoring (optional)
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: spectre-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+volumes:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:
+  alertmanager-data:
+  prometheus-data:
+
+networks:
+  default:
+    driver: bridge

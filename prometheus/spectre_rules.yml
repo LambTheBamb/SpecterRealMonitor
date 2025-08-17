@@ -1,0 +1,29 @@
+groups:
+- name: spectre.rules
+  rules:
+  - alert: HighCacheMissRate
+    expr: cache_miss_rate > 0.1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High cache miss rate detected"
+      description: "Cache miss rate is {{ $value }}%, which may indicate Spectre-like behavior"
+
+  - alert: AnomalousMemoryAccess
+    expr: mem_load_retired_l3_miss > 1000
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Anomalous memory access pattern"
+      description: "L3 cache misses: {{ $value }}/sec"
+
+  - alert: SpeculativeExecutionAnomaly
+    expr: machine_clears_count > 100
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Speculative execution anomaly detected"
+      description: "Machine clears: {{ $value }}/sec"

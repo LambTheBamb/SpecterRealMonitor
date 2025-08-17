@@ -1,0 +1,94 @@
+{
+  "cache_metrics": [
+    "cache-misses",
+    "cache-references",
+    "LLC-load-misses",
+    "LLC-store-misses",
+    "L1-dcache-load-misses",
+    "L1-icache-load-misses",
+    "L1-dcache-stores",
+    "L1-icache-loads",
+    "dTLB-load-misses",
+    "iTLB-load-misses",
+    "node-load-misses",
+    "node-store-misses"
+  ],
+  "branch_metrics": [
+    "branches",
+    "branch-misses",
+    "branch-load-misses"
+  ],
+  "memory_metrics": [
+    "mem_load_retired.l3_miss",
+    "mem_load_retired.l2_miss", 
+    "mem_load_retired.l1_miss",
+    "mem_load_retired.l3_hit",
+    "mem_load_retired.l2_hit",
+    "mem_load_retired.l1_hit",
+    "mem_inst_retired.all_loads",
+    "mem_inst_retired.all_stores",
+    "mem_load_uops_retired.l3_miss",
+    "mem_load_uops_retired.l2_miss",
+    "mem_load_uops_retired.l1_miss"
+  ],
+  "execution_metrics": [
+    "cycles",
+    "instructions", 
+    "stalled-cycles-frontend",
+    "stalled-cycles-backend",
+    "cpu-clock",
+    "task-clock",
+    "context-switches",
+    "cpu-migrations",
+    "page-faults",
+    "minor-faults",
+    "major-faults"
+  ],
+  "speculative_metrics": [
+    "uops_retired.retire_slots",
+    "uops_issued.any",
+    "int_misc.recovery_cycles",
+    "machine_clears.count",
+    "br_misp_retired.all_branches",
+    "uops_executed.thread",
+    "uops_dispatched.thread"
+  ],
+  "advanced_metrics": [
+    "offcore_requests.all_data_rd",
+    "offcore_response.demand_data_rd.l3_miss.any_snoop",
+    "mem_trans_retired.load_latency_gt_4",
+    "mem_trans_retired.load_latency_gt_8", 
+    "mem_trans_retired.load_latency_gt_16",
+    "mem_trans_retired.load_latency_gt_32",
+    "frontend_retired.latency_ge_4_ps",
+    "frontend_retired.latency_ge_8_ps"
+  ],
+  "collection_settings": {
+    "sample_interval": 1,
+    "baseline_window": 1000,
+    "anomaly_threshold_std": 3.0,
+    "high_severity_threshold_std": 5.0,
+    "metrics_retention_hours": 168
+  },
+  "spectre_indicators": {
+    "cache_timing_patterns": [
+      "cache-misses",
+      "LLC-load-misses", 
+      "mem_load_retired.l3_miss"
+    ],
+    "speculative_execution_patterns": [
+      "uops_retired.retire_slots",
+      "machine_clears.count",
+      "int_misc.recovery_cycles"
+    ],
+    "branch_prediction_patterns": [
+      "branch-misses",
+      "br_misp_retired.all_branches"
+    ],
+    "memory_timing_patterns": [
+      "mem_trans_retired.load_latency_gt_4",
+      "mem_trans_retired.load_latency_gt_8",
+      "mem_trans_retired.load_latency_gt_16"
+    ]
+  }
+}
