@@ -12,6 +12,9 @@ from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from collections import deque
 import statistics
+# Add at the top of your existing file
+from enhanced_cloud_monitor import integrate_enhanced_monitoring
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -315,7 +318,7 @@ class SpectreAnomalyDetector:
 def main():
     """Main function for testing Spectre detection."""
     detector = SpectreAnomalyDetector()
-    
+    enhanced_monitor = integrate_enhanced_monitoring()
     # Simulate normal system behavior
     print("Establishing baseline...")
     for i in range(25):

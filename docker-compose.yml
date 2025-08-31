@@ -16,13 +16,16 @@ services:
       - /dev:/host/dev:ro
       - ./data:/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount host's perf tools that match the kernel
+      - /usr/lib/linux-tools/5.19.0-46-generic:/usr/lib/linux-tools/5.19.0-46-generic:ro
+      - /usr/bin/perf:/usr/bin/perf:ro
     environment:
-      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_URL=http://localhost:8086
       - INFLUXDB_TOKEN=your-influxdb-token
       - INFLUXDB_ORG=spectre-monitoring
       - INFLUXDB_BUCKET=spectre-metrics
       - COLLECTION_INTERVAL=1
-      - DEBUG_MODE=false
+      - DEBUG_MODE=false  
     depends_on:
       - influxdb
     restart: unless-stopped

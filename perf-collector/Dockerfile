@@ -2,8 +2,9 @@ FROM ubuntu:22.04
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
-    linux-tools-generic \
-    linux-tools-common \
+#    linux-tools-5.19.0-46-generic \
+#    linux-tools-generic \
+#    linux-tools-common \
     python3 \
     python3-pip \
     curl \
@@ -12,8 +13,16 @@ RUN apt-get update && apt-get install -y \
     git \
     cmake \
     libpfm4-dev \
+    libelf1 \
+    libdw1 \
+    libnuma1 \
+    libunwind8 \
+    libslang2 \
+    libaudit1 \
+    libcap-ng0 \
+    zlib1g \
+    libtraceevent1 \
     && rm -rf /var/lib/apt/lists/*
-
 # Install Python dependencies
 RUN pip3 install \
     influxdb-client \
@@ -49,7 +58,12 @@ COPY metrics_config.json /app/
 COPY entrypoint.sh /app/
 COPY baseline_calculator.py /app/
 COPY anomaly_detector.py /app/
+# Add to your /home/specter-monitor/perf-collector/Dockerfile
+COPY enhanced_cloud_monitor.py /app/
+COPY requirements.txt /app/
 
+# Install additional Python packages if needed
+RUN pip install psutil pyinotify
 # Make scripts executable
 RUN chmod +x /app/entrypoint.sh
 
