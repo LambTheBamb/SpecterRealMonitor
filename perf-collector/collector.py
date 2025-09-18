@@ -8,7 +8,7 @@ import subprocess
 import logging
 import threading
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 import psutil
 import numpy as np
 from influxdb_client import InfluxDBClient, Point, WritePrecision
@@ -25,40 +25,113 @@ class SpectreMetricsCollector:
         self.setup_influxdb()
         self.load_config()
         self.baseline_data = {}
-        self.anomaly_threshold = 3.0  # Standard deviations
         
+        # Load settings from config
+        self.collection_settings = self.get_collection_settings()
+        self.anomaly_threshold = self.collection_settings.get('anomaly_threshold_std', 3.0)
+        self.baseline_window = self.collection_settings.get('baseline_window', 1000)
+        self.available_events = self.get_available_events()
+
     def setup_influxdb(self):
         """Initialize InfluxDB connection"""
         try:
-            url = os.getenv('INFLUXDB_URL', 'http://influxdb:8086')
+            url = os.getenv('INFLUXDB_URL', 'http://127.0.0.1:8086')
             token = os.getenv('INFLUXDB_TOKEN', 'your-influxdb-token')
             org = os.getenv('INFLUXDB_ORG', 'spectre-monitoring')
-            
+
             self.influx_client = InfluxDBClient(url=url, token=token, org=org)
             self.write_api = self.influx_client.write_api(write_options=SYNCHRONOUS)
             logger.info("InfluxDB connection established")
         except Exception as e:
             logger.error(f"Failed to connect to InfluxDB: {e}")
             sys.exit(1)
-    
+
+    def get_collection_settings(self) -> Dict:
+        """Extract collection settings from config"""
+        try:
+            with open('/app/metrics_config.json', 'r') as f:
+                config = json.load(f)
+                return config.get('collection_settings', {
+                    'sample_interval': 1,
+                    'baseline_window': 1000,
+                    'anomaly_threshold_std': 3.0,
+                    'high_severity_threshold_std': 5.0,
+                    'metrics_retention_hours': 168
+                })
+        except:
+            return {
+                'sample_interval': 1,
+                'baseline_window': 1000,
+                'anomaly_threshold_std': 3.0,
+                'high_severity_threshold_std': 5.0,
+                'metrics_retention_hours': 168
+            }
+
+    def get_available_events(self) -> set:
+        """Get list of available perf events on this system"""
+        try:
+            result = subprocess.run(['perf', 'list'], capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                logger.warning("Failed to get perf event list, using defaults")
+                return set()
+            
+            events = set()
+            for line in result.stdout.split('\n'):
+                line = line.strip()
+                if line and not line.startswith('#') and '[' in line:
+                    # Extract event name (part before first space or [)
+                    event = line.split()[0].split('[')[0]
+                    events.add(event)
+            
+            logger.info(f"Found {len(events)} available perf events")
+            return events
+        except Exception as e:
+            logger.warning(f"Error getting available events: {e}")
+            return set()
+
     def load_config(self):
         """Load metrics configuration"""
         try:
             with open('/app/metrics_config.json', 'r') as f:
-                self.config = json.load(f)
+                raw_config = json.load(f)
+                # Flatten nested config structure
+                self.config = self.flatten_config(raw_config)
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
             # Use default config
             self.config = self.get_default_config()
-    
+
+    def flatten_config(self, config: Dict) -> Dict:
+        """Flatten nested config structure to simple event lists"""
+        flattened = {}
+        
+        for category, content in config.items():
+            # Skip settings section entirely
+            if category == 'collection_settings':
+                continue
+                
+            if isinstance(content, dict):
+                # If it's a dict with subcategories, flatten all events
+                events = []
+                for subcategory, event_list in content.items():
+                    if isinstance(event_list, list):
+                        events.extend(event_list)
+                flattened[category] = events
+            elif isinstance(content, list):
+                # If it's already a list, use as-is
+                flattened[category] = content
+            else:
+                # Skip non-list entries
+                continue
+                
+        return flattened
+
     def get_default_config(self):
-        """Default metrics configuration"""
+        """Default metrics configuration with basic events"""
         return {
             "cache_metrics": [
                 "cache-misses",
-                "cache-references",
-                "LLC-load-misses",
-                "LLC-store-misses",
+                "cache-references", 
                 "L1-dcache-load-misses",
                 "L1-icache-load-misses",
                 "dTLB-load-misses",
@@ -66,15 +139,7 @@ class SpectreMetricsCollector:
             ],
             "branch_metrics": [
                 "branch-misses",
-                "branches",
-                "branch-load-misses"
-            ],
-            "memory_metrics": [
-                "mem_load_retired.l3_miss",
-                "mem_load_retired.l2_miss",
-                "mem_load_retired.l1_miss",
-                "mem_inst_retired.all_loads",
-                "mem_inst_retired.all_stores"
+                "branches"
             ],
             "execution_metrics": [
                 "cycles",
@@ -82,83 +147,101 @@ class SpectreMetricsCollector:
                 "stalled-cycles-frontend",
                 "stalled-cycles-backend",
                 "cpu-clock",
-                "task-clock"
-            ],
-            "speculative_metrics": [
-                "uops_retired.retire_slots",
-                "uops_issued.any",
-                "int_misc.recovery_cycles",
-                "machine_clears.count"
+                "task-clock",
+                "context-switches",
+                "page-faults"
             ]
         }
-    
+
+    def filter_available_events(self, events: List[str]) -> List[str]:
+        """Filter event list to only include available events"""
+        if not self.available_events:
+            # If we couldn't get available events, try all
+            return events
+            
+        available = []
+        for event in events:
+            if event in self.available_events:
+                available.append(event)
+            else:
+                logger.debug(f"Event {event} not available on this system")
+        
+        return available
+
     def run_perf_command(self, events: List[str], duration: int = 1) -> Dict:
         """Execute perf stat command and parse results"""
-        try:
-            # Join events with commas
-            event_string = ','.join(events)
+        if not events:
+            return {}
             
+        try:
+            # Filter to only available events
+            available_events = self.filter_available_events(events)
+            if not available_events:
+                logger.warning(f"No available events from list: {events}")
+                return {}
+
+            # Join events with commas
+            event_string = ','.join(available_events)
+
             # Build perf command
             cmd = [
                 'perf', 'stat',
                 '-e', event_string,
                 '-x', ',',  # CSV output
-                '-I', str(duration * 1000),  # Interval in milliseconds
                 '--', 'sleep', str(duration)
             ]
-            
+
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=duration + 5)
-            
+
             if result.returncode != 0:
-                logger.warning(f"Perf command failed: {result.stderr}")
+                logger.warning(f"Perf command failed for events {available_events}: {result.stderr}")
                 return {}
-            
+
             return self.parse_perf_output(result.stderr)
-            
+
         except subprocess.TimeoutExpired:
             logger.error("Perf command timed out")
             return {}
         except Exception as e:
             logger.error(f"Error running perf command: {e}")
             return {}
-    
+
     def parse_perf_output(self, output: str) -> Dict:
         """Parse perf stat CSV output"""
         metrics = {}
         lines = output.strip().split('\n')
-        
+
         for line in lines:
             if not line or line.startswith('#'):
                 continue
-                
+
             parts = line.split(',')
             if len(parts) >= 3:
                 try:
-                    # Format: timestamp,value,event_name
-                    timestamp = parts[0]
-                    value_str = parts[1]
-                    event_name = parts[2]
-                    
+                    # Format: value,unit,event_name,time,pct
+                    value_str = parts[0].strip()
+                    event_name = parts[2].strip()
+
                     # Handle 'not supported' or empty values
                     if value_str and value_str != '<not supported>' and value_str != '<not counted>':
                         value = float(value_str)
                         metrics[event_name] = {
                             'value': value,
-                            'timestamp': timestamp
+                            'timestamp': datetime.utcnow().isoformat()
                         }
                 except (ValueError, IndexError) as e:
                     logger.debug(f"Failed to parse line: {line}, error: {e}")
                     continue
-        
+
         return metrics
-    
+
     def collect_system_metrics(self) -> Dict:
         """Collect additional system metrics"""
         try:
-            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_percent = psutil.cpu_percent(interval=0.1)
             memory = psutil.virtual_memory()
             load_avg = os.getloadavg()
-            
+
             return {
                 'cpu_percent': cpu_percent,
                 'memory_percent': memory.percent,
@@ -170,64 +253,73 @@ class SpectreMetricsCollector:
         except Exception as e:
             logger.error(f"Error collecting system metrics: {e}")
             return {}
-    
+
     def detect_anomalies(self, current_metrics: Dict) -> List[Dict]:
         """Detect anomalies in current metrics"""
         anomalies = []
-        
+
         for metric_name, metric_data in current_metrics.items():
             if metric_name not in self.baseline_data:
                 continue
-                
-            current_value = metric_data.get('value', 0)
+
+            # Handle both dict and numeric values
+            if isinstance(metric_data, dict):
+                current_value = metric_data.get('value', 0)
+            else:
+                current_value = float(metric_data)
+
             baseline = self.baseline_data[metric_name]
-            
             mean = baseline.get('mean', 0)
             std = baseline.get('std', 1)
-            
+
             if std > 0:
                 z_score = abs((current_value - mean) / std)
                 if z_score > self.anomaly_threshold:
+                    high_threshold = self.collection_settings.get('high_severity_threshold_std', 5.0)
                     anomalies.append({
                         'metric': metric_name,
                         'current_value': current_value,
                         'baseline_mean': mean,
                         'z_score': z_score,
-                        'severity': 'high' if z_score > 5 else 'medium'
+                        'severity': 'high' if z_score > high_threshold else 'medium'
                     })
-        
+
         return anomalies
-    
+
     def update_baseline(self, metrics: Dict):
         """Update baseline statistics for metrics"""
         for metric_name, metric_data in metrics.items():
-            value = metric_data.get('value', 0)
-            
+            # Handle both dict and numeric values
+            if isinstance(metric_data, dict):
+                value = metric_data.get('value', 0)
+            else:
+                value = float(metric_data)
+
             if metric_name not in self.baseline_data:
                 self.baseline_data[metric_name] = {
                     'values': [],
                     'mean': 0,
                     'std': 1
                 }
-            
+
             baseline = self.baseline_data[metric_name]
             baseline['values'].append(value)
-            
-            # Keep only last 1000 values for baseline
-            if len(baseline['values']) > 1000:
-                baseline['values'] = baseline['values'][-1000:]
-            
+
+            # Keep only configured number of values for baseline
+            if len(baseline['values']) > self.baseline_window:
+                baseline['values'] = baseline['values'][-self.baseline_window:]
+
             # Update statistics if we have enough data
             if len(baseline['values']) >= 10:
                 baseline['mean'] = np.mean(baseline['values'])
                 baseline['std'] = max(np.std(baseline['values']), 0.1)  # Minimum std
-    
+
     def write_to_influxdb(self, metrics: Dict, anomalies: List[Dict]):
         """Write metrics and anomalies to InfluxDB"""
         try:
             points = []
             timestamp = datetime.utcnow()
-            
+
             # Write performance metrics
             for metric_name, metric_data in metrics.items():
                 if isinstance(metric_data, dict) and 'value' in metric_data:
@@ -243,7 +335,7 @@ class SpectreMetricsCollector:
                         .field("value", float(metric_data)) \
                         .time(timestamp, WritePrecision.S)
                     points.append(point)
-            
+
             # Write anomalies
             for anomaly in anomalies:
                 point = Point("spectre_anomalies") \
@@ -254,87 +346,101 @@ class SpectreMetricsCollector:
                     .field("z_score", anomaly['z_score']) \
                     .time(timestamp, WritePrecision.S)
                 points.append(point)
-            
+
             if points:
                 bucket = os.getenv('INFLUXDB_BUCKET', 'spectre-metrics')
                 self.write_api.write(bucket=bucket, record=points)
                 logger.info(f"Written {len(points)} points to InfluxDB")
-                
+
         except Exception as e:
             logger.error(f"Error writing to InfluxDB: {e}")
-    
+
     def get_metric_type(self, metric_name: str) -> str:
         """Categorize metric by type"""
-        if any(cache_metric in metric_name.lower() for cache_metric in ['cache', 'llc', 'l1', 'l2', 'l3', 'tlb']):
+        name_lower = metric_name.lower()
+        if any(cache_metric in name_lower for cache_metric in ['cache', 'llc', 'l1', 'l2', 'l3', 'tlb']):
             return 'cache'
-        elif any(branch_metric in metric_name.lower() for branch_metric in ['branch']):
+        elif any(branch_metric in name_lower for branch_metric in ['branch']):
             return 'branch'
-        elif any(mem_metric in metric_name.lower() for mem_metric in ['mem_', 'memory']):
+        elif any(mem_metric in name_lower for mem_metric in ['mem_', 'memory']):
             return 'memory'
-        elif any(spec_metric in metric_name.lower() for spec_metric in ['uops', 'machine_clear', 'recovery']):
+        elif any(spec_metric in name_lower for spec_metric in ['uops', 'machine_clear', 'recovery']):
             return 'speculative'
+        elif any(sys_metric in name_lower for sys_metric in ['cpu', 'load', 'memory_percent']):
+            return 'system'
         else:
             return 'execution'
-    
+
     def collect_all_metrics(self):
         """Collect all configured metrics"""
         all_metrics = {}
-        
+
         # Collect each category of metrics
         for category, events in self.config.items():
-            if events:
-                logger.info(f"Collecting {category}: {events}")
+            if events and isinstance(events, list):
+                logger.info(f"Collecting {category}: {len(events)} events")
                 category_metrics = self.run_perf_command(events)
-                all_metrics.update(category_metrics)
-        
+                if category_metrics:
+                    all_metrics.update(category_metrics)
+                    logger.info(f"Got {len(category_metrics)} metrics from {category}")
+                else:
+                    logger.warning(f"No metrics collected from {category}")
+
         # Add system metrics
         system_metrics = self.collect_system_metrics()
-        all_metrics.update(system_metrics)
-        
+        if system_metrics:
+            all_metrics.update(system_metrics)
+            logger.info(f"Got {len(system_metrics)} system metrics")
+
         return all_metrics
-    
+
     def run(self):
         """Main collection loop"""
         logger.info("Starting Spectre metrics collection")
-        
-        interval = int(os.getenv('COLLECTION_INTERVAL', '1'))
-        
+        logger.info(f"Loaded {len(self.config)} metric categories")
+
+        # Use interval from config settings, fallback to env var, then default
+        interval = self.collection_settings.get('sample_interval', 
+                                               int(os.getenv('COLLECTION_INTERVAL', '1')))
+
         while True:
             try:
                 # Collect metrics
                 metrics = self.collect_all_metrics()
-                
+
                 if not metrics:
                     logger.warning("No metrics collected")
                     time.sleep(interval)
                     continue
-                
+
                 # Update baseline data
                 self.update_baseline(metrics)
-                
+
                 # Detect anomalies
                 anomalies = self.detect_anomalies(metrics)
-                
+
                 if anomalies:
                     logger.warning(f"Detected {len(anomalies)} anomalies")
                     for anomaly in anomalies:
                         logger.warning(f"Anomaly in {anomaly['metric']}: "
                                      f"current={anomaly['current_value']:.2f}, "
                                      f"z_score={anomaly['z_score']:.2f}")
-                
+
                 # Write to InfluxDB
                 self.write_to_influxdb(metrics, anomalies)
-                
+
                 logger.info(f"Collected {len(metrics)} metrics, {len(anomalies)} anomalies")
-                
+
             except KeyboardInterrupt:
                 logger.info("Shutting down collector")
                 break
             except Exception as e:
                 logger.error(f"Error in collection loop: {e}")
-            
+                import traceback
+                logger.error(traceback.format_exc())
+
             time.sleep(interval)
-        
+
         # Cleanup
         if self.influx_client:
             self.influx_client.close()

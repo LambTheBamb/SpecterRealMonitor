@@ -34,7 +34,7 @@ perf list cache 2>/dev/null | head -20 || echo "Cannot list cache events"
 
 # Wait for InfluxDB to be ready
 echo "Waiting for InfluxDB..."
-until curl -f "${INFLUXDB_URL:-http://influxdb:8086}/ping" >/dev/null 2>&1; do
+until curl -f "http://127.0.0.1:8086/ping" >/dev/null 2>&1; do
     echo "Waiting for InfluxDB to be ready..."
     sleep 5
 done

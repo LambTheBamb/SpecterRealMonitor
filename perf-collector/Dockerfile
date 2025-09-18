@@ -1,10 +1,11 @@
-FROM ubuntu:22.04
+FROM debian:12
 
 # Install required packages
 RUN apt-get update && apt-get install -y \
 #    linux-tools-5.19.0-46-generic \
 #    linux-tools-generic \
 #    linux-tools-common \
+	linux-perf \
     python3 \
     python3-pip \
     curl \
@@ -24,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     libtraceevent1 \
     && rm -rf /var/lib/apt/lists/*
 # Install Python dependencies
-RUN pip3 install \
+RUN pip3 install --break-system-packages \
     influxdb-client \
     psutil \
     numpy \
@@ -63,7 +64,7 @@ COPY enhanced_cloud_monitor.py /app/
 COPY requirements.txt /app/
 
 # Install additional Python packages if needed
-RUN pip install psutil pyinotify
+RUN pip  install --break-system-packages  psutil pyinotify
 # Make scripts executable
 RUN chmod +x /app/entrypoint.sh
 
