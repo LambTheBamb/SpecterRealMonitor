@@ -30,7 +30,7 @@ class SpectreMetricsCollector:
     def setup_influxdb(self):
         """Initialize InfluxDB connection"""
         try:
-            url = os.getenv('INFLUXDB_URL', 'http://influxdb:8086')
+            url = os.getenv('INFLUXDB_URL', 'http://127.0.0.1:8086')
             token = os.getenv('INFLUXDB_TOKEN', 'your-influxdb-token')
             org = os.getenv('INFLUXDB_ORG', 'spectre-monitoring')
             

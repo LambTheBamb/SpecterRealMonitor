@@ -11,9 +11,329 @@
   "panels": [
     {
       "id": 1,
+      "title": "CPU Clock",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"cpu-clock\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms" }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Task Clock",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"task-clock\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms" }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Context Switches",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"context-switches\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Page Faults",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"page-faults\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 5,
+      "title": "CPU Migrations",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"cpu-migrations\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Major Page Faults",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"major-faults\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Minor Page Faults",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"minor-faults\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 8,
+      "title": "System Load Average",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 24 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] =~ /load_/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Memory Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 24 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"memory_percent\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100 }
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 28 },
+      "id": 21,
+      "panels": [],
+      "title": "Anomaly Details (Divided Tables)",
+      "type": "row"
+    },
+    {
+      "id": 22,
+      "title": "Context Switch Anomalies",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 29 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"spectre_anomalies\")\n  |> filter(fn: (r) => r.metric == \"context-switches\")\n  |> pivot(rowKey:[\"_time\", \"severity\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"], desc: true)"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "_time": "Time",
+              "baseline_mean": "Baseline Mean",
+              "current_value": "Current Value",
+              "z_score": "Z-Score",
+              "severity": "Severity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "title": "Page Fault Anomalies",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 29 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"spectre_anomalies\")\n  |> filter(fn: (r) => r.metric == \"page-faults\")\n  |> pivot(rowKey:[\"_time\", \"severity\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"], desc: true)"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "_time": "Time",
+              "baseline_mean": "Baseline Mean",
+              "current_value": "Current Value",
+              "z_score": "Z-Score",
+              "severity": "Severity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "title": "Cache Miss Anomalies",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 36 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"spectre_anomalies\")\n  |> filter(fn: (r) => r.metric == \"cache-misses\")\n  |> pivot(rowKey:[\"_time\", \"severity\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"], desc: true)"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "_time": "Time",
+              "baseline_mean": "Baseline Mean",
+              "current_value": "Current Value",
+              "z_score": "Z-Score",
+              "severity": "Severity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "title": "Branch Misprediction Anomalies",
+      "type": "table",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 36 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"spectre_anomalies\")\n  |> filter(fn: (r) => r.metric == \"branch-misses\")\n  |> pivot(rowKey:[\"_time\", \"severity\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> sort(columns: [\"_time\"], desc: true)"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "_time": "Time",
+              "baseline_mean": "Baseline Mean",
+              "current_value": "Current Value",
+              "z_score": "Z-Score",
+              "severity": "Severity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "collapsed": true,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 },
+      "id": 26,
+      "panels": [],
+      "title": "Anomaly Details (Combined Table - Previous Version)",
+      "type": "row"
+    },
+    {
+      "id": 27,
+      "title": "Recent Anomalies Table (Combined)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_anomalies\")\n  |> pivot(\n      rowKey:[\"_time\", \"metric\", \"severity\"],\n      columnKey: [\"_field\"],\n      valueColumn: \"_value\"\n    )\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 100)"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "_time": "Time",
+              "metric": "Metric",
+              "baseline_mean": "Baseline Mean",
+              "current_value": "Current Value",
+              "z_score": "Z-Score",
+              "severity": "Severity"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "TLB Miss Patterns",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 52 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"dTLB-load-misses\" or r[\"metric_name\"] == \"iTLB-load-misses\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Frontend/Backend Stalls",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 52 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"stalled-cycles-frontend\" or r[\"metric_name\"] == \"stalled-cycles-backend\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "CPU Cycles & Stall Events",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 58 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => \n      r[\"metric_name\"] == \"sched_sched_stat_iowait\" or\n      r[\"metric_name\"] == \"cycles\" or\n      r[\"metric_name\"] == \"instructions\" or\n      r[\"metric_name\"] == \"stalled-cycles-frontend\" or\n      r[\"metric_name\"] == \"stalled-cycles-backend\"\n  )\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 14,
       "title": "Cache Miss Patterns (Spectre Indicator)",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 66 },
       "targets": [
         {
           "refId": "A",
@@ -22,23 +342,23 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "palette-classic"},
+          "color": { "mode": "palette-classic" },
           "unit": "short",
           "thresholds": {
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 1000},
-              {"color": "red", "value": 5000}
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1000 },
+              { "color": "red", "value": 5000 }
             ]
           }
         }
       }
     },
     {
-      "id": 2,
+      "id": 15,
       "title": "L3 Cache Misses (MEM_LOAD_RETIRED.L3_MISS)",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 66 },
       "targets": [
         {
           "refId": "A",
@@ -46,17 +366,14 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "palette-classic"},
-          "unit": "short"
-        }
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
       }
     },
     {
-      "id": 3,
+      "id": 16,
       "title": "Branch Misprediction Patterns",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 74 },
       "targets": [
         {
           "refId": "A",
@@ -65,10 +382,10 @@
       ]
     },
     {
-      "id": 4,
+      "id": 17,
       "title": "Speculative Execution Anomalies",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 74 },
       "targets": [
         {
           "refId": "A",
@@ -76,17 +393,14 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "palette-classic"},
-          "unit": "short"
-        }
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
       }
     },
     {
-      "id": 5,
+      "id": 18,
       "title": "Memory Load Latency Distribution",
       "type": "timeseries",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 82 },
       "targets": [
         {
           "refId": "A",
@@ -95,10 +409,10 @@
       ]
     },
     {
-      "id": 6,
+      "id": 19,
       "title": "Anomaly Detection Status",
       "type": "stat",
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 24},
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 90 },
       "targets": [
         {
           "refId": "A",
@@ -107,22 +421,22 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": {"mode": "thresholds"},
+          "color": { "mode": "thresholds" },
           "thresholds": {
             "steps": [
-              {"color": "green", "value": null},
-              {"color": "yellow", "value": 1},
-              {"color": "red", "value": 5}
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
             ]
           }
         }
       }
     },
     {
-      "id": 7,
+      "id": 20,
       "title": "Cache Hit/Miss Ratio",
       "type": "gauge",
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 24},
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 90 },
       "targets": [
         {
           "refId": "A",
@@ -136,102 +450,16 @@
           "unit": "percent",
           "thresholds": {
             "steps": [
-              {"color": "red", "value": null},
-              {"color": "yellow", "value": 80},
-              {"color": "green", "value": 95}
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
             ]
           }
         }
       }
-    },
-    {
-      "id": 8,
-      "title": "System Load Average",
-      "type": "timeseries",
-      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 24},
-      "targets": [
-        {
-          "refId": "A",
-          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] =~ /load_/)\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "title": "Memory Usage",
-      "type": "timeseries",
-      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 24},
-      "targets": [
-        {
-          "refId": "A",
-          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"system_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"memory_percent\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100
-        }
-      }
-    },
-    {
-      "id": 10,
-      "title": "Recent Anomalies Table",
-      "type": "table",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
-      "targets": [
-        {
-          "refId": "A",
-          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_anomalies\")\n  |> sort(columns: [\"_time\"], desc: true)\n  |> limit(n: 50)"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "indexByName": {},
-            "renameByName": {
-              "_time": "Time",
-              "metric": "Metric",
-              "severity": "Severity",
-              "current_value": "Current Value",
-              "baseline_mean": "Baseline Mean",
-              "z_score": "Z-Score"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": 11,
-      "title": "TLB Miss Patterns",
-      "type": "timeseries",
-      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 36},
-      "targets": [
-        {
-          "refId": "A",
-          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"dTLB-load-misses\" or r[\"metric_name\"] == \"iTLB-load-misses\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
-        }
-      ]
-    },
-    {
-      "id": 12,
-      "title": "Frontend/Backend Stalls",
-      "type": "timeseries",
-      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 36},
-      "targets": [
-        {
-          "refId": "A",
-          "query": "from(bucket: \"spectre-metrics\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"spectre_metrics\")\n  |> filter(fn: (r) => r[\"metric_name\"] == \"stalled-cycles-frontend\" or r[\"metric_name\"] == \"stalled-cycles-backend\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
-        }
-      ]
     }
   ],
-  "templating": {
-    "list": []
-  },
+  "templating": { "list": [] },
   "annotations": {
     "list": [
       {

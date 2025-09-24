@@ -62,7 +62,7 @@ COPY anomaly_detector.py /app/
 # Add to your /home/specter-monitor/perf-collector/Dockerfile
 COPY enhanced_cloud_monitor.py /app/
 COPY requirements.txt /app/
-
+COPY perfomance-collector.py /app/
 # Install additional Python packages if needed
 RUN pip  install --break-system-packages  psutil pyinotify
 # Make scripts executable
